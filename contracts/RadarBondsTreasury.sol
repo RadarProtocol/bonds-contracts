@@ -65,6 +65,7 @@ contract RadarBondsTreasury is IRadarBondsTreasury {
         require(msg.sender == pendingOwner, "Unauthorized");
         address oldOwner = owner;
         owner = pendingOwner;
+        pendingOwner = address(0);
 
         emit OwnershipPassed(oldOwner, owner);
     }
