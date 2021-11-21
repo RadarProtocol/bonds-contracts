@@ -163,8 +163,183 @@ describe("Radar Treasury", () => {
         const getTresBalAfter = await mockToken.balanceOf(treasury.address);
         expect(getTresBalAfter).to.equal(0);
     });
-    it.skip("Set Bond Data", async () => {});
-    it.skip("Change DAO", async () => {});
-    it.skip("Get Reward", async () => {});
-    it.skip("Get Reward (with fee)", async () => {});
+    it("Set Bond Data", async () => {
+        const {
+            mockBond,
+            deployer,
+            treasury
+        } = await snapshot();
+
+        await treasury.connect(deployer).setBondData(
+            mockBond.address,
+            false,
+            0,
+            0
+        );
+
+        const getEnabledBeforeCall = await treasury.getIsRegisteredBond(mockBond.address);
+        expect(getEnabledBeforeCall).to.equal(false);
+
+        const getAllowanceBeforeCall = await treasury.getBondTokenAllowance(mockBond.address);
+        expect(getAllowanceBeforeCall).to.equal(0);
+
+        const getFeeBeforeCall = await treasury.getBondFee(mockBond.address);
+        expect(getFeeBeforeCall).to.equal(0);
+
+        await treasury.connect(deployer).setBondData(
+            mockBond.address,
+            true,
+            ethers.utils.parseEther('1000000'), // 1,000,000 RADAR
+            100 // 1% fee
+        );
+
+        const getEnabledAfterCall = await treasury.getIsRegisteredBond(mockBond.address);
+        expect(getEnabledAfterCall).to.equal(true);
+
+        const getAllowanceAfterCall = await treasury.getBondTokenAllowance(mockBond.address);
+        expect(getAllowanceAfterCall).to.equal(ethers.utils.parseEther('1000000'));
+
+        const getFeeAfterCall = await treasury.getBondFee(mockBond.address);
+        expect(getFeeAfterCall).to.equal(100);
+    });
+    it("Change DAO", async () => {
+        const {
+            treasury,
+            mockDAO,
+            otherAddress1,
+            deployer
+        } = await snapshot();
+
+        const getDAOBefore = await treasury.getDAO();
+        expect(getDAOBefore).to.equal(mockDAO.address);
+
+        await treasury.connect(deployer).changeDAO(otherAddress1.address);
+
+        const getDAOAfter = await treasury.getDAO();
+        expect(getDAOAfter).to.equal(otherAddress1.address);
+    });
+    it("Get Reward", async () => {
+        const {
+            treasury,
+            deployer,
+            mockDAO,
+            mockToken,
+            mockBond
+        } = await snapshot();
+
+        // Register Bond
+        await treasury.connect(deployer).setBondData(
+            mockBond.address,
+            true,
+            ethers.utils.parseEther('10'), // 10 RADAR
+            0
+        );
+
+        const getAllowanceBefore = await treasury.getBondTokenAllowance(mockBond.address);
+        expect(getAllowanceBefore).to.equal(ethers.utils.parseEther('10'));
+
+        // Get reward (no tokens)
+        await expect(treasury.connect(mockBond).getReward(ethers.utils.parseEther('2'))).to.be.revertedWith(
+            "Not enough tokens for reward"
+        );
+
+        // Transfer tokens
+        await mockToken.connect(deployer).transfer(treasury.address, ethers.utils.parseEther('50'));
+
+        // Get reward
+        await treasury.connect(mockBond).getReward(ethers.utils.parseEther('6'));
+
+        // Get reward (no allowance)
+        await expect(treasury.connect(mockBond).getReward(ethers.utils.parseEther('6'))).to.be.revertedWith(
+            "Bond Sold Out"
+        );
+
+        // States after
+        const getAllowanceAfter = await treasury.getBondTokenAllowance(mockBond.address);
+        expect(getAllowanceAfter).to.equal(ethers.utils.parseEther('4'));
+        const getTreasuryTokenBalanceAfter = await mockToken.balanceOf(treasury.address);
+        expect(getTreasuryTokenBalanceAfter).to.equal(ethers.utils.parseEther('44'));
+        const getBondBalanceAfter = await mockToken.balanceOf(mockBond.address);
+        expect(getBondBalanceAfter).to.equal(ethers.utils.parseEther('6'));
+
+        await treasury.connect(deployer).setBondData(
+            mockBond.address,
+            true,
+            ethers.utils.parseEther('44'),
+            0
+        );
+
+        await treasury.connect(mockBond).getReward(ethers.utils.parseEther('44'));
+
+        const getAllowanceAfter2 = await treasury.getBondTokenAllowance(mockBond.address);
+        expect(getAllowanceAfter2).to.equal(0);
+        const getTreasuryTokenBalanceAfter2 = await mockToken.balanceOf(treasury.address);
+        expect(getTreasuryTokenBalanceAfter2).to.equal(0);
+        const getBondBalanceAfter2 = await mockToken.balanceOf(mockBond.address);
+        expect(getBondBalanceAfter2).to.equal(ethers.utils.parseEther('50'));
+    });
+    it("Get Reward (with fee)", async () => {
+        const {
+            treasury,
+            deployer,
+            mockDAO,
+            mockToken,
+            mockBond
+        } = await snapshot();
+
+        // Register Bond
+        await treasury.connect(deployer).setBondData(
+            mockBond.address,
+            true,
+            ethers.utils.parseEther('10'), // 10 RADAR
+            1000 // 10%
+        );
+
+        const getAllowanceBefore = await treasury.getBondTokenAllowance(mockBond.address);
+        expect(getAllowanceBefore).to.equal(ethers.utils.parseEther('10'));
+
+        // Get reward (no tokens)
+        await expect(treasury.connect(mockBond).getReward(ethers.utils.parseEther('2'))).to.be.revertedWith(
+            "Not enough tokens for reward"
+        );
+
+        // Transfer tokens
+        await mockToken.connect(deployer).transfer(treasury.address, ethers.utils.parseEther('50'));
+
+        // Get reward
+        await treasury.connect(mockBond).getReward(ethers.utils.parseEther('6'));
+
+        // Get reward (no allowance)
+        await expect(treasury.connect(mockBond).getReward(ethers.utils.parseEther('6'))).to.be.revertedWith(
+            "Bond Sold Out"
+        );
+
+        // States after
+        const getAllowanceAfter = await treasury.getBondTokenAllowance(mockBond.address);
+        expect(getAllowanceAfter).to.equal(ethers.utils.parseEther('4'));
+        const getTreasuryTokenBalanceAfter = await mockToken.balanceOf(treasury.address);
+        expect(getTreasuryTokenBalanceAfter).to.equal(ethers.utils.parseEther('44'));
+        const getBondBalanceAfter = await mockToken.balanceOf(mockBond.address);
+        expect(getBondBalanceAfter).to.equal(ethers.utils.parseEther('5.4'));
+        const getDAOBalanceAfter = await mockToken.balanceOf(mockDAO.address);
+        expect(getDAOBalanceAfter).to.equal(ethers.utils.parseEther('0.6'));
+
+        await treasury.connect(deployer).setBondData(
+            mockBond.address,
+            true,
+            ethers.utils.parseEther('44'),
+            1000 // 10%
+        );
+
+        await treasury.connect(mockBond).getReward(ethers.utils.parseEther('44'));
+
+        const getAllowanceAfter2 = await treasury.getBondTokenAllowance(mockBond.address);
+        expect(getAllowanceAfter2).to.equal(0);
+        const getTreasuryTokenBalanceAfter2 = await mockToken.balanceOf(treasury.address);
+        expect(getTreasuryTokenBalanceAfter2).to.equal(0);
+        const getBondBalanceAfter2 = await mockToken.balanceOf(mockBond.address);
+        expect(getBondBalanceAfter2).to.equal(ethers.utils.parseEther('45'));
+        const getDAOBalanceAfter2 = await mockToken.balanceOf(mockDAO.address);
+        expect(getDAOBalanceAfter2).to.equal(ethers.utils.parseEther('5'));
+    });
 });
