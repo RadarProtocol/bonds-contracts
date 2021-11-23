@@ -8,6 +8,7 @@ interface IRadarBond {
         uint256 bondPayoutLimit; // bond reward limit in RADAR
         uint256 vestingTime; // Vesting time in seconds
         uint256 bondDiscount; // % of deposit in rewards (divisor 10000)
+        uint256 minPrice; // minimum price in terms of RADAR/OTHER LP where bonds will be emmited
     }
 
     struct BondInfo {
@@ -37,6 +38,8 @@ interface IRadarBond {
     function getMaxBondAmount() external view returns (uint256); 
 
     function estimateReward(uint256 _bondAssetAmount) external view returns (uint256);
+
+    function getIsTrustedOrigin(address _origin) external view returns (bool);
 
     function bond(uint256 _amount, uint256 _minReward) external;
 
