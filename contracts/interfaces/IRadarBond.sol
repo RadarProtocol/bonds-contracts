@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 interface IRadarBond {
 
     struct BondTerms {
-        uint256 bondLimit; // bond limit in RADAR
+        uint256 bondPayoutLimit; // bond reward limit in RADAR
         uint256 vestingTime; // Vesting time in seconds
         uint256 bondDiscount; // % of deposit in rewards (divisor 10000)
     }
@@ -36,7 +36,9 @@ interface IRadarBond {
 
     function getMaxBondAmount() external view returns (uint256); 
 
-    function bond(uint256 _amount) external;
+    function estimateReward(uint256 _bondAssetAmount) external view returns (uint256);
+
+    function bond(uint256 _amount, uint256 _minReward) external;
 
     function redeem(bool _stake) external;
 }

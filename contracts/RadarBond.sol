@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "./interfaces/IRadarBondsTreasury.sol";
 import "./interfaces/IRadarBond.sol";
 import "./interfaces/IRadarStaking.sol";
+import "./external/IUniswapV2Pair.sol";
 
 contract RadarBond is IRadarBond {
 
@@ -28,7 +29,7 @@ contract RadarBond is IRadarBond {
         address _payoutAsset,
         address _bondAsset,
         address _staking,
-        uint256 _depositLimit, // bondAsset is LP token, so this limit is that amount of bondAsset in the deposited LP tokens
+        uint256 _depositLimit, // bondAsset is LP token, so this limit max reward of payout token per user
         uint256 _vestingTime,
         uint256 _bondDiscount
     ) {
@@ -37,7 +38,7 @@ contract RadarBond is IRadarBond {
         BOND_ASSET = _bondAsset;
         STAKING = _staking;
         terms = BondTerms({
-            bondLimit: _depositLimit,
+            bondPayoutLimit: _depositLimit,
             vestingTime: _vestingTime,
             bondDiscount: _bondDiscount
         });
@@ -45,12 +46,12 @@ contract RadarBond is IRadarBond {
 
     // Manager functions
     function changeTerms(
-        uint256 _depositLimit, // bondAsset is LP token, so this limit is that amount of bondAsset in the deposited LP tokens
+        uint256 _depositLimit, // bondAsset is LP token, so this limit max reward of payout token per user
         uint256 _vestingTime,
         uint256 _bondDiscount
     ) external onlyManager {
         terms = BondTerms({
-            bondLimit: _depositLimit,
+            bondPayoutLimit: _depositLimit,
             vestingTime: _vestingTime,
             bondDiscount: _bondDiscount
         });
@@ -65,7 +66,7 @@ contract RadarBond is IRadarBond {
     }
 
     // Bond functions
-    function bond(uint256 _amount) external override {
+    function bond(uint256 _amount, uint256 _minReward) external override {
         // TODO: Implement
     }
 
@@ -74,21 +75,42 @@ contract RadarBond is IRadarBond {
     }
 
     // Internal functions
-    function _payoutToLPBondAsset(uint256 _payoutAssetAmount) internal view returns (uint256) {
+    function _rewardToLPBondAsset(uint256 _payoutAssetAmount) internal view returns (uint256) {
         // TODO: IMPLEMENT
-        // TODO: MAKE SURE THE FOLLOWING IS CORRECT
-        // Get PAYOUT_ASSET reserve from BOND_ASSET's LP pair (pancakeswap) - use Uniswap Interface
-        // divide _payoutAssetAmount by PAYOUT_ASSET reserve (keep track of decimals)
-        // multiply this with the total supply of bond asset
-
-        // Pool with 1000 RADAR and 1 ETH - total supply of 10 LP tokens
-        // limit of 10 RADAR
-        // 10/1000 = 0.01
-        // 0.01 * 10 = 0.1 LP tokens MAX
+        // TODO: OPOSITE of _calculateReward()
 
         // TODO: MAKE SURE IT IS SAFE TO MULTIPLY/DIVIDE RESERVE NUMBERS BY 2 FROM LOOKING AT UNISWAP/PANCAKESWAP CODE
 
         return 0;
+    }
+
+    function _calculateReward(uint256 _bondAssetAmount) internal view returns (uint256) {
+        // TODO: IMPLEMENT
+    }
+
+    // TODO: VERY IMPORTANT!!!! TEST!!!!
+    // TODO: ALSO TEST WITH A FLASHLOAN (on Uniswap) AND SANDWHICH ATTACK
+    function _getPayoutAssetValueFromBondAsset(uint256 _bondAssetAmount) internal view returns (uint256) {
+        (uint256 _reserve0, uint256 _reserve1, ) = IUniswapV2Pair(BOND_ASSET).getReserves();
+        uint256 _totalSupply = IUniswapV2Pair(BOND_ASSET).totalSupply();
+
+        // YOU CAN USE THE K VALUE AND THE TWAP PRICE OF RADAR IN RESPECT TO THE OTHER ASSET
+        // THEN, JUST USE THE FORMULA HERE: https://cmichel.io/pricing-lp-tokens/
+        // LOOK AT THE TWARS SECTION. YOU MIGHT NEED TWAPs, OR MAYBE YOU MIGHT NOT
+
+        // CALCULATE THE r0' AND THE r1' AND SEE WHICH IS FOR RADAR => r'
+        // USE THAT AS A "FAIR-RESERVE"
+        // THEN RETURN (_bondAssetAmount / _totalSupply) * r' (keep in mind decimals)
+        // THIS MAY BE VULNERABLE TO FLASHLOAN SANDWHICH ATTACKS OR PAIR-SPECIFIC DRAINING ATTACKS
+
+        // OR DO THE SAME THING BUT WITH TWAP PRICES (SEE HOW ALPHA FINANCE DOES IT)
+        // BUT DONT USE CHAINLINK ORACLES
+        // THIS MIGHT GIVE LOWER REWARDS WHEN PRICE IS GOING UP
+        // SINCE TWAP WILL STAY DOWN BECAUSE OF THE AVERAGE
+
+        // IF ALL OF THE ABOVE FAILS, JUST USE THE CONTRACT WITH tx.origin SAME TX-DOUBLE DEPOSIT PROTECTION
+        // AND BELIEVE IN THE BOND's MAX REWARD LIMIT AND ADD REWARDS REGULARLY
+
     }
 
     // State getters
@@ -120,7 +142,18 @@ contract RadarBond is IRadarBond {
         return BOND_ASSET;
     }
 
-    function getMaxBondAmount() external view override returns (uint256) {
-        return _payoutToLPBondAsset(terms.bondLimit);
+    function estimateReward(uint256 _bondAssetAmount) external override view returns (uint256) {
+        return _calculateReward(_bondAssetAmount);
+    }
+
+    function getMaxBondAmount() public view override returns (uint256) {
+        uint256 _bondLimit = _rewardToLPBondAsset(terms.bondPayoutLimit);
+        uint256 _payoutLeftTreasury = IRadarBondsTreasury(TREASURY).getBondTokenAllowance(address(this));
+        uint256 _treasuryLimit = _rewardToLPBondAsset(_payoutLeftTreasury);
+        if (_bondLimit < _treasuryLimit) {
+            return _bondLimit;
+        } else {
+            return _treasuryLimit;
+        }
     }
 }
