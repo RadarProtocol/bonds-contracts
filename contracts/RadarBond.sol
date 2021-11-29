@@ -6,9 +6,13 @@ import "./interfaces/IRadarBondsTreasury.sol";
 import "./interfaces/IRadarBond.sol";
 import "./interfaces/IRadarStaking.sol";
 import "./external/IUniswapV2Pair.sol";
-import "./external/IERC20.sol";
+import "./external/IERC20Extra.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract RadarBond is IRadarBond {
+
+    using SafeERC20 for IERC20;
 
     mapping(address => BondInfo) private bonds;
     mapping(address => uint256) flashProtection;
@@ -31,8 +35,8 @@ contract RadarBond is IRadarBond {
         if (!trustedOrigins[tx.origin]) {
             require(block.number > flashProtection[tx.origin], "Flash Protection");
         }
-        _;
         flashProtection[tx.origin] = block.number;
+        _;
     }
 
     constructor (
@@ -86,12 +90,21 @@ contract RadarBond is IRadarBond {
 
     // Bond functions
     function bond(uint256 _amount, uint256 _minReward) external override flashLocked {
-        // TODO: Implement
+        require(_amount <= getMaxBondAmount(), "Bond too big");
+        (uint256 _reward, uint256 _spotPrice) = _calculateReward(_amount);
+        require(_reward >= _minReward, "Slippage minReward");
+        require(_spotPrice >= terms.minPrice, "Price too low for bond minting");
 
-        // Slippage minReward
-        // Check reward is smaller than reward limit
-        // Check minPrice when calculating payout asset from bond asset
-        // If lower than minPrice, fail
+        IERC20(BOND_ASSET).safeTransferFrom(msg.sender, TREASURY, _amount);
+        uint256 _rewardPayout = IRadarBondsTreasury(TREASURY).getReward(_reward);
+
+        bonds[msg.sender] = BondInfo({
+            payout: (_rewardPayout + bonds[msg.sender].payout),
+            creationTimestamp: block.timestamp,
+            leftToVest: terms.vestingTime
+        });
+
+        emit BondCreated(msg.sender, _amount, _rewardPayout, (block.timestamp + terms.vestingTime));
     }
 
     function redeem(bool _stake) external override flashLocked {
@@ -134,8 +147,8 @@ contract RadarBond is IRadarBond {
         uint256 _totalSupply = IUniswapV2Pair(BOND_ASSET).totalSupply();
         address _token0 = IUniswapV2Pair(BOND_ASSET).token0();
         address _token1 = IUniswapV2Pair(BOND_ASSET).token1();
-        uint8 _token0Decimals = IERC20(_token0).decimals();
-        uint8 _token1Decimals = IERC20(_token1).decimals();
+        uint8 _token0Decimals = IERC20Extra(_token0).decimals();
+        uint8 _token1Decimals = IERC20Extra(_token1).decimals();
 
         uint256 _value;
         uint256 _price;

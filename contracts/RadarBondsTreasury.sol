@@ -76,7 +76,7 @@ contract RadarBondsTreasury is IRadarBondsTreasury {
 
     // Bond Functions
 
-    function getReward(uint256 _rewardAmount) external override onlyBond {
+    function getReward(uint256 _rewardAmount) external override onlyBond returns (uint256) {
         require(bondAllowance[msg.sender] >= _rewardAmount, "Bond Sold Out");
         bondAllowance[msg.sender] = bondAllowance[msg.sender] - _rewardAmount;
 
@@ -87,7 +87,10 @@ contract RadarBondsTreasury is IRadarBondsTreasury {
             IERC20(RADAR).safeTransfer(RADAR_DAO, _fee);
         }
 
-        IERC20(RADAR).safeTransfer(msg.sender, (_rewardAmount - _fee));
+        uint256 _finalAmount = (_rewardAmount - _fee);
+        IERC20(RADAR).safeTransfer(msg.sender, _finalAmount);
+
+        return _finalAmount;
     }
 
     // State Getters

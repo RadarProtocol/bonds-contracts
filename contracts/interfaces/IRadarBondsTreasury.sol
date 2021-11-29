@@ -9,7 +9,7 @@ interface IRadarBondsTreasury {
 
     // Bond Functions
 
-    function getReward(uint256 _rewardAmount) external;
+    function getReward(uint256 _rewardAmount) external returns (uint256);
     
     // State Getters
     function getOwner() external view returns (address);

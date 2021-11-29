@@ -12,7 +12,6 @@ interface IRadarBond {
     }
 
     struct BondInfo {
-        address owner; // Bond Owner
         uint256 leftToVest; // how many seconds to full vesting
         uint256 creationTimestamp; // When was the bond created/updated
         uint256 payout; // payout in RADAR when fully vested
