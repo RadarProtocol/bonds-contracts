@@ -100,7 +100,7 @@ contract RadarBond is IRadarBond {
 
         bonds[msg.sender] = BondInfo({
             payout: (_rewardPayout + bonds[msg.sender].payout),
-            creationTimestamp: block.timestamp,
+            updateTimestamp: block.timestamp,
             leftToVest: terms.vestingTime
         });
 
@@ -108,7 +108,47 @@ contract RadarBond is IRadarBond {
     }
 
     function redeem(bool _stake) external override flashLocked {
-        // TODO: Implement
+        BondInfo memory userBond = bonds[msg.sender];
+
+        uint256 _delta = block.timestamp - userBond.updateTimestamp;
+        uint256 _vestingTime = userBond.leftToVest;
+        uint256 _payout;
+        uint256 _leftToVest;
+
+        require(userBond.payout > 0 && _vestingTime > 0, "Bond does not exist");
+
+        if (_delta >= _vestingTime) {
+            _payout = userBond.payout;
+            _leftToVest = 0;
+            delete bonds[msg.sender];
+        } else {
+            _payout = (userBond.payout * _delta) / _vestingTime;
+            _leftToVest = (userBond.leftToVest - _delta);
+
+            bonds[msg.sender] = BondInfo({
+                payout: (userBond.payout - _payout),
+                leftToVest: _leftToVest,
+                updateTimestamp: block.timestamp
+            });
+        }
+
+        _giveReward(msg.sender, _payout, _stake);
+        emit BondRedeemed(
+            msg.sender,
+            _payout,
+            (userBond.payout - _payout),
+            _leftToVest,
+            _stake
+        );
+    }
+
+    function _giveReward(address _receiver, uint256 _amount, bool _stake) internal {
+        if (_stake) {
+            IERC20(PAYOUT_ASSET).safeApprove(STAKING, _amount);
+            IRadarStaking(STAKING).stake(_amount, _receiver);
+        } else {
+            IERC20(PAYOUT_ASSET).safeTransfer(_receiver, _amount);
+        }
     }
 
     // Internal functions

@@ -13,12 +13,12 @@ interface IRadarBond {
 
     struct BondInfo {
         uint256 leftToVest; // how many seconds to full vesting
-        uint256 creationTimestamp; // When was the bond created/updated
+        uint256 updateTimestamp; // When was the bond created/updated
         uint256 payout; // payout in RADAR when fully vested
     }
 
     event BondCreated(address indexed owner, uint256 bondedAssets, uint256 payout, uint256 vestingDate);
-    event BondRedeemed(address indexed owner, uint256 payoutRedeemed, uint256 payoutRemaining, uint256 vestingRemaining);
+    event BondRedeemed(address indexed owner, uint256 payoutRedeemed, uint256 payoutRemaining, uint256 vestingRemaining, bool tokensStaked);
 
     function getBondingTerms() external view returns (BondTerms memory);
 
