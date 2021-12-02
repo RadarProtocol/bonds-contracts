@@ -130,7 +130,7 @@ const snapshot = async () => {
 }
 
 describe("Radar Bond", () => {
-    it.skip("Access Control", async () => {
+    it("Access Control", async () => {
         const {
             otherAddress1,
             bond
@@ -164,7 +164,7 @@ describe("Radar Bond", () => {
             "Unauthorized"
         );
     });
-    it.skip("State Getters", async () => {
+    it("State Getters", async () => {
         const {
             bond,
             deployer,
@@ -198,7 +198,7 @@ describe("Radar Bond", () => {
         const getIsTrustedOrigin = await bond.getIsTrustedOrigin(ethers.constants.AddressZero);
         expect(getIsTrustedOrigin).to.equal(false);
     });
-    it.skip("Change manager", async () => {
+    it("Change manager", async () => {
         const {
             bond,
             deployer,
@@ -217,7 +217,7 @@ describe("Radar Bond", () => {
         const getTreasuryOwnerAfter = await treasury.getOwner();
         expect(getBondOwnerAfter).to.equal(getTreasuryOwnerAfter).to.equal(otherAddress1.address);
     });
-    it.skip("Flash Locking", async () => {
+    it("Flash Locking", async () => {
         const {
             otherAddress1,
             flasher,
@@ -252,7 +252,7 @@ describe("Radar Bond", () => {
         );
 
     });
-    it.skip("Trusted Origin", async () => {
+    it("Trusted Origin", async () => {
         const {
             deployer,
             otherAddress1,
@@ -287,7 +287,7 @@ describe("Radar Bond", () => {
         await bond.connect(deployer).setTrustedOrigin(otherAddress1.address, true);
         await flasher.connect(otherAddress1).doDoubleDeposit();
     });
-    it.skip("Max bond calculation", async () => {
+    it("Max bond calculation", async () => {
         const {
             bond,
             bondAsset,
@@ -322,7 +322,7 @@ describe("Radar Bond", () => {
 
         expect(lpTokensRequired2).to.be.closeTo(maxBondAmount2, 10**10);
     });
-    it.skip("Sandwich attack (minPrice)", async () => {
+    it("Sandwich attack (minPrice)", async () => {
         const {
             mockToken,
             flasher,
@@ -368,7 +368,7 @@ describe("Radar Bond", () => {
             "Price too low for bond minting"
         );
     });
-    it.skip("Change Terms", async () => {
+    it("Change Terms", async () => {
         const {
             bond
         } = await snapshot();
@@ -386,7 +386,7 @@ describe("Radar Bond", () => {
         expect(getBondingTerms.bondDiscount).to.equal(500);
         expect(getBondingTerms.minPrice).to.equal(100000000);
     });
-    it.skip("Change Treasury", async () => {
+    it("Change Treasury", async () => {
         const {
             bond
         } = await snapshot();
@@ -396,7 +396,7 @@ describe("Radar Bond", () => {
         const getTreasury = await bond.getTreasury();
         expect(getTreasury).to.equal(ethers.constants.AddressZero);
     });
-    it.skip("Change Staking", async () => {
+    it("Change Staking", async () => {
         const {
             bond
         } = await snapshot();
@@ -406,7 +406,7 @@ describe("Radar Bond", () => {
         const getStaking = await bond.getStaking();
         expect(getStaking).to.equal(ethers.constants.AddressZero);
     });
-    it.skip("Reward calculation", async () => {
+    it("Reward calculation", async () => {
         const {
             bond,
             mockToken,
@@ -441,7 +441,7 @@ describe("Radar Bond", () => {
 
         expect(estimatedReward).to.be.closeTo(ethers.utils.parseEther('22'), 10);
     });
-    it.skip("Bond slippage protection", async () => {
+    it("Bond slippage protection", async () => {
         const {
             otherAddress1,
             mockToken,
@@ -526,7 +526,7 @@ describe("Radar Bond", () => {
             "Slippage minReward"
         );
     });
-    it.skip("Bond maxBond revert", async () => {
+    it("Bond maxBond revert", async () => {
         const {
             bond,
             bondAsset,
@@ -682,17 +682,6 @@ describe("Radar Bond", () => {
         const lblock = await investor1.provider.getBlock('latest');
         const finishVesting = lblock.timestamp + 432000;
 
-        // args: [
-        //     '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-        //     BigNumber { _hex: '0x2c9e195462a0bd68', _isBigNumber: true },
-        //     BigNumber { _hex: '0x012a606abee3fb9849', _isBigNumber: true },
-        //     BigNumber { _hex: '0x61ea01fe', _isBigNumber: true },
-        //     owner: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-        //     bondedAssets: BigNumber { _hex: '0x2c9e195462a0bd68', _isBigNumber: true },
-        //     payout: BigNumber { _hex: '0x012a606abee3fb9849', _isBigNumber: true },
-        //     vestingDate: BigNumber { _hex: '0x61ea01fe', _isBigNumber: true }
-        //   ]
-
         expect(bondCreatedEventInvestor1.args.vestingDate).to.be.closeTo(ethers.BigNumber.from(finishVesting.toString()), 10);
         expect(bondCreatedEventInvestor2.args.vestingDate).to.be.closeTo(ethers.BigNumber.from(finishVesting.toString()), 10);
 
@@ -705,7 +694,256 @@ describe("Radar Bond", () => {
         expect(bondCreatedEventInvestor1.args.payout.div(10**10)).to.be.closeTo(actualRewardInvestor1.div(10**10), 10**8);
         expect(bondCreatedEventInvestor2.args.payout.div(10**10)).to.be.closeTo(actualRewardInvestor2.div(10**10), 10**8);
 
-        // TODO: CHECK REDEEMING
-        // TODO: REMOVE SKIPS
+        const payoutInvestor1 = bondCreatedEventInvestor1.args.payout;
+        const payoutInvestor2 = bondCreatedEventInvestor2.args.payout;
+
+        // Pass 2.5 days
+        await (investor1.provider as any).send("evm_increaseTime", [216000]);
+        const investor1BalanceBefore = await mockToken.balanceOf(investor1.address);
+
+        // Redeem half both
+        const redeemInvestor1Tx1 = await bond.connect(investor1).redeem(false);
+        const redeemInvestor2Tx1 = await bond.connect(investor2).redeem(true);
+
+        const redeemInvestor1Receipt1 = await redeemInvestor1Tx1.wait();
+        const redeemInvestor2Receipt1 = await redeemInvestor2Tx1.wait();
+
+        const bondRedeemed1Investor1 = bond.interface.parseLog(redeemInvestor1Receipt1.logs[redeemInvestor1Receipt1.logs.length - 1]);
+        const bondRedeemed1Investor2 = bond.interface.parseLog(redeemInvestor2Receipt1.logs[redeemInvestor2Receipt1.logs.length - 1]);
+
+        expect(bondRedeemed1Investor1.args.owner).to.equal(investor1.address);
+        expect(bondRedeemed1Investor2.args.owner).to.equal(investor2.address);
+
+        expect(bondRedeemed1Investor1.args.payoutRedeemed.div(10**10)).to.be.closeTo(payoutInvestor1.div(2).div(10**10), 10**6);
+        expect(bondRedeemed1Investor2.args.payoutRedeemed.div(10**10)).to.be.closeTo(payoutInvestor2.div(2).div(10**10), 10**6);
+
+        expect(bondRedeemed1Investor1.args.payoutRemaining.div(10**10)).to.be.closeTo(payoutInvestor1.div(2).div(10**10), 10**6);
+        expect(bondRedeemed1Investor2.args.payoutRemaining.div(10**10)).to.be.closeTo(payoutInvestor2.div(2).div(10**10), 10**6);
+
+        expect(ethers.BigNumber.from(bondRedeemed1Investor1.args.vestingRemaining)).to.be.closeTo(ethers.BigNumber.from(216000), 10);
+        expect(ethers.BigNumber.from(bondRedeemed1Investor2.args.vestingRemaining)).to.be.closeTo(ethers.BigNumber.from(216000), 10);
+
+        expect(bondRedeemed1Investor1.args.tokensStaked).to.equal(false);
+        expect(bondRedeemed1Investor2.args.tokensStaked).to.equal(true);
+
+        const investor1Balance1 = await mockToken.balanceOf(investor1.address);
+        const investor2Balance1 = await staking.balanceOf(investor2.address);
+        expect(investor1Balance1.sub(investor1BalanceBefore)).to.equal(bondRedeemed1Investor1.args.payoutRedeemed);
+        expect(investor2Balance1).to.equal(bondRedeemed1Investor2.args.payoutRedeemed);
+
+        // Pass 2.5 days
+        await (investor1.provider as any).send("evm_increaseTime", [216000]);
+
+        // Redeem everything both
+        const redeemInvestor1Tx2 = await bond.connect(investor1).redeem(false);
+        const redeemInvestor2Tx2 = await bond.connect(investor2).redeem(true);
+
+        const redeemInvestor1Receipt2 = await redeemInvestor1Tx2.wait();
+        const redeemInvestor2Receipt2 = await redeemInvestor2Tx2.wait();
+
+        const bondRedeemed2Investor1 = bond.interface.parseLog(redeemInvestor1Receipt2.logs[redeemInvestor1Receipt2.logs.length - 1]);
+        const bondRedeemed2Investor2 = bond.interface.parseLog(redeemInvestor2Receipt2.logs[redeemInvestor2Receipt2.logs.length - 1]);
+
+        expect(bondRedeemed2Investor1.args.owner).to.equal(investor1.address);
+        expect(bondRedeemed2Investor2.args.owner).to.equal(investor2.address);
+
+        expect(bondRedeemed2Investor1.args.payoutRedeemed.div(10**10)).to.be.closeTo(payoutInvestor1.div(2).div(10**10), 10**6);
+        expect(bondRedeemed2Investor2.args.payoutRedeemed.div(10**10)).to.be.closeTo(payoutInvestor2.div(2).div(10**10), 10**6);
+
+        expect(bondRedeemed2Investor1.args.payoutRemaining).to.equal(0);
+        expect(bondRedeemed2Investor2.args.payoutRemaining).to.equal(0);
+
+        expect(bondRedeemed2Investor1.args.vestingRemaining).to.equal(0);
+        expect(bondRedeemed2Investor2.args.vestingRemaining).to.equal(0);
+
+        expect(bondRedeemed2Investor1.args.tokensStaked).to.equal(false);
+        expect(bondRedeemed2Investor2.args.tokensStaked).to.equal(true);
+
+        const investor1Balance2 = await mockToken.balanceOf(investor1.address);
+        const investor2Balance2 = await staking.balanceOf(investor2.address);
+        expect(investor1Balance2.sub(investor1Balance1)).to.equal(bondRedeemed2Investor1.args.payoutRedeemed);
+        expect(investor2Balance2.sub(investor2Balance1)).to.equal(bondRedeemed2Investor2.args.payoutRedeemed);
+    });
+    it("Double Deposit", async () => {
+        const {
+            bond,
+            mockToken,
+            WETH,
+            uniswapRouter,
+            investor1,
+            bondAsset
+        } = await snapshot();
+
+        // Buy tokens
+        await uniswapRouter.connect(investor1).swapExactETHForTokens(
+            0,
+            [WETH, mockToken.address],
+            investor1.address,
+            10000000000000,
+            {
+                value: ethers.utils.parseEther('1')
+            }
+        );
+
+        // Get balances
+        const investor1TokenBal = await mockToken.balanceOf(investor1.address);
+
+        // Approve
+        await mockToken.connect(investor1).approve(uniswapRouter.address, investor1TokenBal);
+
+        const reserves = await bondAsset.getReserves();
+        const token0 = await bondAsset.token0();
+        const price = token0 == mockToken.address ? 
+            reserves._reserve1.mul(ethers.utils.parseEther('1')).div(reserves._reserve0) : 
+            reserves._reserve0.mul(ethers.utils.parseEther('1')).div(reserves._reserve1);
+
+        // Add Liquidity
+        await uniswapRouter.connect(investor1).addLiquidityETH(
+            mockToken.address,
+            investor1TokenBal,
+            0,
+            0,
+            investor1.address,
+            100000000000,
+            {
+                value: investor1TokenBal.mul(price).div(ethers.utils.parseEther('1'))
+            }
+        );
+
+        // Bond Assets
+        const SLIPPAGE_TOLERANCE = 5; // 1%
+
+        const investor1LpBal = await bondAsset.balanceOf(investor1.address);
+        const deposit1 = investor1LpBal.div(2);
+        const deposit2 = investor1LpBal.sub(deposit1);
+
+        await bondAsset.connect(investor1).approve(bond.address, investor1LpBal);
+
+        const estimatedRewardInvestor1 = ethers.utils.parseEther('11');
+
+        const actualRewardInvestor1 = await bond.estimateReward(deposit1);
+
+        const minSlipInvestor1 = estimatedRewardInvestor1.sub(estimatedRewardInvestor1.div(ethers.BigNumber.from((100 / SLIPPAGE_TOLERANCE).toString())));
+
+        console.log(`
+        Est. Reward Investor1: ${estimatedRewardInvestor1}
+        Act. Reward Investor1: ${actualRewardInvestor1}
+        Min. Reward Investor1: ${minSlipInvestor1}
+        `);
+
+        const bondTxInvestor1 = await bond.connect(investor1).bond(deposit1, minSlipInvestor1);
+
+        const bondReceiptInvestor1 = await bondTxInvestor1.wait();
+
+        const bondCreatedEventInvestor1 = bond.interface.parseLog(bondReceiptInvestor1.logs[bondReceiptInvestor1.logs.length - 1]);
+
+        const lblock = await investor1.provider.getBlock('latest');
+        const finishVesting = lblock.timestamp + 432000;
+
+        expect(bondCreatedEventInvestor1.args.vestingDate).to.be.closeTo(ethers.BigNumber.from(finishVesting.toString()), 10);
+        expect(bondCreatedEventInvestor1.args.owner).to.equal(investor1.address);
+        expect(bondCreatedEventInvestor1.args.bondedAssets).to.equal(deposit1);
+        expect(bondCreatedEventInvestor1.args.payout.div(10**10)).to.be.closeTo(actualRewardInvestor1.div(10**10), 10**8);
+
+        const payoutInvestor1 = bondCreatedEventInvestor1.args.payout;
+
+        // Pass 2.5 days
+        await (investor1.provider as any).send("evm_increaseTime", [216000]);
+        const investor1BalanceBefore = await mockToken.balanceOf(investor1.address);
+
+        // Redeem half both
+        const redeemInvestor1Tx1 = await bond.connect(investor1).redeem(false);
+
+        const redeemInvestor1Receipt1 = await redeemInvestor1Tx1.wait();
+
+        const bondRedeemed1Investor1 = bond.interface.parseLog(redeemInvestor1Receipt1.logs[redeemInvestor1Receipt1.logs.length - 1]);
+
+        expect(bondRedeemed1Investor1.args.owner).to.equal(investor1.address);
+
+        expect(bondRedeemed1Investor1.args.payoutRedeemed.div(10**10)).to.be.closeTo(payoutInvestor1.div(2).div(10**10), 10**6);
+
+        expect(bondRedeemed1Investor1.args.payoutRemaining.div(10**10)).to.be.closeTo(payoutInvestor1.div(2).div(10**10), 10**6);
+
+        expect(ethers.BigNumber.from(bondRedeemed1Investor1.args.vestingRemaining)).to.be.closeTo(ethers.BigNumber.from(216000), 10);
+
+        expect(bondRedeemed1Investor1.args.tokensStaked).to.equal(false);
+
+        const investor1Balance1 = await mockToken.balanceOf(investor1.address);
+        expect(investor1Balance1.sub(investor1BalanceBefore)).to.equal(bondRedeemed1Investor1.args.payoutRedeemed);
+
+        // Deposit again
+        const estimatedRewardInvestor2 = ethers.utils.parseEther('11');
+
+        const actualRewardInvestor2 = await bond.estimateReward(deposit2);
+
+        const minSlipInvestor2 = estimatedRewardInvestor2.sub(estimatedRewardInvestor2.div(ethers.BigNumber.from((100 / SLIPPAGE_TOLERANCE).toString())));
+
+        console.log(`
+        Est. Reward Investor2: ${estimatedRewardInvestor2}
+        Act. Reward Investor2: ${actualRewardInvestor2}
+        Min. Reward Investor2: ${minSlipInvestor2}
+        `);
+
+        const bondTxInvestor2 = await bond.connect(investor1).bond(deposit2, minSlipInvestor2);
+
+        const bondReceiptInvestor2 = await bondTxInvestor2.wait();
+
+        const bondCreatedEventInvestor2 = bond.interface.parseLog(bondReceiptInvestor2.logs[bondReceiptInvestor2.logs.length - 1]);
+
+        const lblock2 = await investor1.provider.getBlock('latest');
+        const finishVesting2 = lblock2.timestamp + 432000;
+
+        expect(bondCreatedEventInvestor2.args.vestingDate).to.be.closeTo(ethers.BigNumber.from(finishVesting2.toString()), 10);
+        expect(bondCreatedEventInvestor2.args.owner).to.equal(investor1.address);
+        expect(bondCreatedEventInvestor2.args.bondedAssets).to.equal(deposit2);
+        expect(bondCreatedEventInvestor2.args.payout.div(10**10)).to.be.closeTo((actualRewardInvestor2.add(actualRewardInvestor1.div(2))).div(10**10), 10**8);
+
+        const payoutInvestor2 = bondCreatedEventInvestor2.args.payout.sub(actualRewardInvestor1.div(2));
+
+        // Pass 2.5 days
+        await (investor1.provider as any).send("evm_increaseTime", [216000]);
+
+        // Check redeem 25% of deposit1 + 50% of deposit 2
+        const redeemInvestor1Tx2 = await bond.connect(investor1).redeem(false);
+
+        const redeemInvestor1Receipt2 = await redeemInvestor1Tx2.wait();
+
+        const bondRedeemed1Investor2 = bond.interface.parseLog(redeemInvestor1Receipt2.logs[redeemInvestor1Receipt2.logs.length - 1]);
+
+        expect(bondRedeemed1Investor2.args.owner).to.equal(investor1.address);
+
+        expect(bondRedeemed1Investor2.args.payoutRedeemed.div(10**10)).to.be.closeTo((payoutInvestor1.div(4).add(payoutInvestor2.div(2))).div(10**10), 10**8);
+
+        expect(bondRedeemed1Investor2.args.payoutRemaining.div(10**10)).to.be.closeTo((payoutInvestor1.div(4).add(payoutInvestor2.div(2))).div(10**10), 10**8);
+
+        expect(ethers.BigNumber.from(bondRedeemed1Investor2.args.vestingRemaining)).to.be.closeTo(ethers.BigNumber.from(216000), 10);
+
+        expect(bondRedeemed1Investor2.args.tokensStaked).to.equal(false);
+
+        const investor1Balance2 = await mockToken.balanceOf(investor1.address);
+        expect(investor1Balance2.sub(investor1BalanceBefore).sub(investor1Balance1)).to.be.closeTo(bondRedeemed1Investor2.args.payoutRedeemed, 10**5);
+
+        // Pass 2.5 days
+        await (investor1.provider as any).send("evm_increaseTime", [216000]);
+
+        // Check redeem 25% of deposit1 + 50% of deposit 2
+        const redeemInvestor1Tx3 = await bond.connect(investor1).redeem(false);
+
+        const redeemInvestor1Receipt3 = await redeemInvestor1Tx3.wait();
+
+        const bondRedeemed1Investor3 = bond.interface.parseLog(redeemInvestor1Receipt3.logs[redeemInvestor1Receipt3.logs.length - 1]);
+
+        expect(bondRedeemed1Investor3.args.owner).to.equal(investor1.address);
+
+        expect(bondRedeemed1Investor3.args.payoutRedeemed.div(10**10)).to.be.closeTo((payoutInvestor1.div(4).add(payoutInvestor2.div(2))).div(10**10), 10**8);
+
+        expect(bondRedeemed1Investor3.args.payoutRemaining.div(10**10)).to.equal(0);
+
+        expect(bondRedeemed1Investor3.args.vestingRemaining).to.equal(0);
+
+        expect(bondRedeemed1Investor3.args.tokensStaked).to.equal(false);
+
+        const investor1Balance3 = await mockToken.balanceOf(investor1.address);
+        expect(investor1Balance3.div(10**10)).to.be.closeTo(ethers.utils.parseEther('22').div(10**10), 10**8);
     });
 });

@@ -104,7 +104,7 @@ contract RadarBond is IRadarBond {
             leftToVest: terms.vestingTime
         });
 
-        emit BondCreated(msg.sender, _amount, _rewardPayout, (block.timestamp + terms.vestingTime));
+        emit BondCreated(msg.sender, _amount, bonds[msg.sender].payout, (block.timestamp + terms.vestingTime));
     }
 
     function redeem(bool _stake) external override flashLocked {
