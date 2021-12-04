@@ -39,7 +39,9 @@ export interface DeploymentConfig {
   MAX_REWARD_PAYOUT: Number,
   BOND_VESTING_TIME: Number,
   BOND_REWARD_DISCOUNT: Number,
-  BOND_INITIAL_MINPRICE: Number
+  BOND_INITIAL_MINPRICE: Number,
+  BOND_INITIAL_ALLOWANCE: Number,
+  BOND_FEE: Number
 }
 
 const fn: DeployFunction = async () => {
