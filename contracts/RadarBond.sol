@@ -26,6 +26,8 @@ contract RadarBond is IRadarBond {
 
     uint256 private constant DISCOUNT_DIVISOR = 10000;
 
+    uint256 private totalLPDeposited = 0;
+
     modifier onlyManager {
         require(msg.sender == getManager(), "Unauthorized");
         _;
@@ -103,6 +105,8 @@ contract RadarBond is IRadarBond {
             updateTimestamp: block.timestamp,
             leftToVest: terms.vestingTime
         });
+
+        totalLPDeposited = totalLPDeposited + _amount;
 
         emit BondCreated(msg.sender, _amount, bonds[msg.sender].payout, (block.timestamp + terms.vestingTime));
     }
@@ -204,6 +208,11 @@ contract RadarBond is IRadarBond {
     }
 
     // State getters
+
+    function getTotalLPDeposited() external view override returns (uint256) {
+        return totalLPDeposited;
+    }
+
     function getManager() public view override returns (address) {
         return IRadarBondsTreasury(TREASURY).getOwner();
     }

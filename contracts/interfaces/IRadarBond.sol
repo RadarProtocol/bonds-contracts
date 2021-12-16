@@ -24,6 +24,8 @@ interface IRadarBond {
 
     function getBond(address _owner) external view returns (BondInfo memory);
 
+    function getTotalLPDeposited() external view returns (uint256);
+
     function getManager() external view returns (address);
 
     function getTreasury() external view returns (address);

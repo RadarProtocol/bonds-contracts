@@ -581,8 +581,17 @@ describe("Radar Bond", () => {
             investor1,
             investor2,
             staking,
-            bondAsset
+            bondAsset,
+            treasury
         } = await snapshot();
+
+        console.log(`==== Used for this test ====
+        Bond Address: ${bond.address}
+        Mock Token Address: ${mockToken.address}
+        Staking: ${staking.address}
+        Bond LP Asset: ${bondAsset.address}
+        Treasury: ${treasury.address}
+        `);
 
         // Buy tokens
         await uniswapRouter.connect(investor1).swapExactETHForTokens(
