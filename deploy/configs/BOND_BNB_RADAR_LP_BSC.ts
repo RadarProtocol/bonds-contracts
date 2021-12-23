@@ -3,7 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 
 import { DeploymentConfig, saveConfig } from '../utils/config';
 
-const isDevDeploy = true;
+const isDevDeploy = false;
 
 // Deployment Metadata
 const ENABLED = false;

@@ -156,7 +156,6 @@ contract RadarBond is IRadarBond {
     }
 
     // Internal functions
-    // TODO: IMPORTANT!!! TEST
     function _rewardToLPBondAsset(uint256 _payoutAssetAmount) internal view returns (uint256) {
         
         uint256 _value = (_payoutAssetAmount * DISCOUNT_DIVISOR) / (terms.bondDiscount + DISCOUNT_DIVISOR);
@@ -185,7 +184,6 @@ contract RadarBond is IRadarBond {
         
     }
 
-    // TODO: VERY IMPORTANT!!!! TEST!!!!
     function _getPayoutAssetValueFromBondAsset(uint256 _bondAssetAmount) internal view returns (uint256, uint256) {
         (uint256 _reserve0, uint256 _reserve1, ) = IUniswapV2Pair(BOND_ASSET).getReserves();
         uint256 _totalSupply = IUniswapV2Pair(BOND_ASSET).totalSupply();

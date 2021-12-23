@@ -3,7 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 
 import { DeploymentConfig, saveConfig } from '../utils/config';
 
-const isDevDeploy = true;
+const isDevDeploy = false;
 
 // Deployment Metadata
 const ENABLED = false;
@@ -15,7 +15,7 @@ const PAYOUT_TOKEN = "0xf03a2dc374d494fbe894563fe22ee544d826aa50"; // Radar
 
 // Core Deployment
 const STAKING_DURATION = 60*60*24*28; // 28 days
-const DAO = ""; // DAO timelock on BSC
+const DAO = "0xd24B1fFBDCc0dbaf0d6aA7422e10b05208aBe71b"; // DAO timelock on BSC
 
 // Bond Deployment
 const CORE_TREASURY = ethers.constants.AddressZero;

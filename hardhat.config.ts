@@ -80,7 +80,7 @@ const config: HardhatUserConfig = {
       accounts: accounts('bsc'),
       url: node('bsc'),
       timeout: 259200000,
-      gasPrice: 10000000000,
+      gasPrice: 5000000000,
       gasMultiplier: 1.1
     },
     dev: {
