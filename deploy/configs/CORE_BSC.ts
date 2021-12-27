@@ -21,12 +21,12 @@ const DAO = "0xd24B1fFBDCc0dbaf0d6aA7422e10b05208aBe71b"; // DAO timelock on BSC
 const CORE_TREASURY = ethers.constants.AddressZero;
 const BOND_LP_ASSET = ethers.constants.AddressZero;
 const CORE_STAKING = ethers.constants.AddressZero;
-const MAX_REWARD_PAYOUT = 0;
-const BOND_VESTING_TIME = 0;
-const BOND_REWARD_DISCOUNT = 0;
-const BOND_INITIAL_MINPRICE = 0;
-const BOND_INITIAL_ALLOWANCE = 0;
-const BOND_FEE = 0;
+const MAX_REWARD_PAYOUT = "0";
+const BOND_VESTING_TIME = "0";
+const BOND_REWARD_DISCOUNT = "0";
+const BOND_INITIAL_MINPRICE = "0";
+const BOND_INITIAL_ALLOWANCE = "0";
+const BOND_FEE = "0";
 
 const configuration: DeploymentConfig = {
     ENABLED,

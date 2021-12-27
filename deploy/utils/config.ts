@@ -36,12 +36,12 @@ export interface DeploymentConfig {
   CORE_TREASURY: string,
   BOND_LP_ASSET: string,
   CORE_STAKING: string,
-  MAX_REWARD_PAYOUT: Number,
-  BOND_VESTING_TIME: Number,
-  BOND_REWARD_DISCOUNT: Number,
-  BOND_INITIAL_MINPRICE: Number,
-  BOND_INITIAL_ALLOWANCE: Number,
-  BOND_FEE: Number
+  MAX_REWARD_PAYOUT: string,
+  BOND_VESTING_TIME: string,
+  BOND_REWARD_DISCOUNT: string,
+  BOND_INITIAL_MINPRICE: string,
+  BOND_INITIAL_ALLOWANCE: string,
+  BOND_FEE: string
 }
 
 const fn: DeployFunction = async () => {
