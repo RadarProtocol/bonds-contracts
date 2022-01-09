@@ -27,6 +27,7 @@ const BOND_REWARD_DISCOUNT = "0";
 const BOND_INITIAL_MINPRICE = "0";
 const BOND_INITIAL_ALLOWANCE = "0";
 const BOND_FEE = "0";
+const BOND_MINPRICELP = ""; // For Single Asset Bonds
 
 const configuration: DeploymentConfig = {
     ENABLED,
@@ -43,7 +44,8 @@ const configuration: DeploymentConfig = {
     BOND_REWARD_DISCOUNT,
     BOND_INITIAL_MINPRICE,
     BOND_INITIAL_ALLOWANCE,
-    BOND_FEE
+    BOND_FEE,
+    BOND_MINPRICELP
 }
 
 const fn: DeployFunction = async (hre) => {

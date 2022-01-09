@@ -41,7 +41,8 @@ export interface DeploymentConfig {
   BOND_REWARD_DISCOUNT: string,
   BOND_INITIAL_MINPRICE: string,
   BOND_INITIAL_ALLOWANCE: string,
-  BOND_FEE: string
+  BOND_FEE: string,
+  BOND_MINPRICELP: string
 }
 
 const fn: DeployFunction = async () => {
