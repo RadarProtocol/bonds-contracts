@@ -96,6 +96,13 @@ const config: HardhatUserConfig = {
         count: 5
       },
       url: "http://localhost:8546"
+    },
+    fantom: {
+      accounts: accounts('fantom'),
+      url: node('fantom'),
+      timeout: 259200000,
+      gasPrice: 1000000000000,
+      gasMultiplier: 1.1
     }
   },
 };
