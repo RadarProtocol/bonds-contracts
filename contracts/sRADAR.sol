@@ -66,4 +66,10 @@ contract sRADAR is ERC20 {
 
         _withdraw(_user, _recipient, _amount);
     }
+
+    // State Getters
+
+    function sharePrice() external view returns (uint256) {
+        return (IERC20(RADAR).balanceOf(address(this)) * 10**18) / totalSupply();
+    }
 }
