@@ -13,18 +13,34 @@ contract sRADAR is ERC20 {
 
     address private immutable RADAR;
 
-    uint256 private lockTime;
-    mapping(address => uint256) private unlockTime;
+    uint256 private lockTime; // Lock time in seconds since deposit, cannot withdraw/transfer tokens
+    mapping(address => uint256) private unlockTime; // Mapping of each user's timestamp when the tokens will be unlocked. 0 if never deposited.
+
+    bytes32 immutable public DOMAIN_SEPARATOR;
+    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    mapping(address => uint) public permitNonces;
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Unauthorized");
         _;
     }
 
-    constructor(address _radar, uint256 _lockTime) ERC20("Staked Radar", "sRADAR") {
+    constructor(address _radar, uint256 _lockTime, string memory _version) ERC20("Staked Radar", "sRADAR") {
         owner = msg.sender;
         RADAR = _radar;
         lockTime = _lockTime;
+
+        // Build DOMAIN_SEPARATOR
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes("sRADAR")),
+                keccak256(bytes(_version)),
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
     // Internal functions
@@ -55,6 +71,22 @@ contract sRADAR is ERC20 {
         _burn(_user, _amount);
         IERC20(RADAR).safeTransfer(_recipient, _withdrawAmount);
     }
+
+    // EIP-2612: permit() https://eips.ethereum.org/EIPS/eip-2612
+    function permit(address _owner, address _spender, uint _value, uint _deadline, uint8 _v, bytes32 _r, bytes32 _s) external {
+        require(_deadline >= block.timestamp, "Permit: EXPIRED");
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(PERMIT_TYPEHASH, _owner, _spender, _value, permitNonces[_owner]++, _deadline))
+            )
+        );
+        address recoveredAddress = ecrecover(digest, _v, _r, _s);
+        require(recoveredAddress != address(0) && recoveredAddress == _owner, "Permit: INVALID_SIGNATURE");
+        _approve(_owner, _spender, _value);
+    }
+
 
     // ERC20 overrides
 
