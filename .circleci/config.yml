@@ -43,6 +43,7 @@ jobs:
           command: npm test
           environment:
             ETHEREUM_NODE: https://eth-mainnet.alchemyapi.io/v2/BMl6OKMeu0A6ZnM8gj5oBrzdO63r5SXH
+      - codecov/upload
 
 workflows:
   version: 2
@@ -52,4 +53,3 @@ workflows:
       - test:
           requires:
             - dependencies
-      - codecov/upload
