@@ -185,6 +185,9 @@ describe("Radar Single Asset Bond", () => {
 
         const getIsTrustedOrigin = await bond.getIsTrustedOrigin(ethers.constants.AddressZero);
         expect(getIsTrustedOrigin).to.equal(false);
+
+        const getTotalLPCall = await bond.getTotalLPDeposited();
+        expect(getTotalLPCall).to.eq(0);
     });
     it("Change manager", async () => {
         const {
@@ -239,6 +242,9 @@ describe("Radar Single Asset Bond", () => {
             bond
         } = await snapshot();
 
+        const isTrusted1 = await bond.getIsTrustedOrigin(otherAddress1.address);
+        expect(isTrusted1).to.eq(false);
+
         // Get some WETH
         await bondAsset.connect(otherAddress1).deposit({
             value: ethers.utils.parseEther('1')
@@ -250,6 +256,10 @@ describe("Radar Single Asset Bond", () => {
         await bondAsset.connect(otherAddress1).transfer(flasher.address, baBalance);
 
         await bond.connect(deployer).setTrustedOrigin(otherAddress1.address, true);
+
+        const isTrusted2 = await bond.getIsTrustedOrigin(otherAddress1.address);
+        expect(isTrusted2).to.eq(true);
+
         await flasher.connect(otherAddress1).doDoubleDeposit();
     });
     it("Max bond calculation", async () => {
@@ -528,6 +538,9 @@ describe("Radar Single Asset Bond", () => {
         const bondTxInvestor1 = await bond.connect(investor1).bond(investor1LpBal, minSlipInvestor1);
         const bondTxInvestor2 = await bond.connect(investor2).bond(investor2LpBal, minSlipInvestor2);
 
+        const getTotalLPCall = await bond.getTotalLPDeposited();
+        expect(getTotalLPCall).to.eq(investor1LpBal.add(investor2LpBal));
+
         const bondReceiptInvestor1 = await bondTxInvestor1.wait();
         const bondReceiptInvestor2 = await bondTxInvestor2.wait();
 
@@ -536,6 +549,17 @@ describe("Radar Single Asset Bond", () => {
 
         const lblock = await (investor1.provider as any).getBlock('latest');
         const finishVesting = lblock.timestamp + 432000;
+
+        const getBondInvestor1 = await bond.getBond(investor1.address);
+        const getBondInvestor2 = await bond.getBond(investor2.address);
+
+        expect(getBondInvestor1[0]).to.eq(432000);
+        expect(ethers.BigNumber.from(getBondInvestor1[1])).to.be.closeTo(ethers.BigNumber.from(lblock.timestamp), 5);
+        expect(getBondInvestor1[2]).to.eq(bondCreatedEventInvestor1.args.payout);
+
+        expect(getBondInvestor2[0]).to.eq(432000);
+        expect(ethers.BigNumber.from(getBondInvestor2[1])).to.be.closeTo(ethers.BigNumber.from(lblock.timestamp), 5);
+        expect(getBondInvestor2[2]).to.eq(bondCreatedEventInvestor2.args.payout);
 
         expect(bondCreatedEventInvestor1.args.vestingDate).to.be.closeTo(ethers.BigNumber.from(finishVesting.toString()), 10);
         expect(bondCreatedEventInvestor2.args.vestingDate).to.be.closeTo(ethers.BigNumber.from(finishVesting.toString()), 10);
