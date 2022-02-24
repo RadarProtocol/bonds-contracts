@@ -26,7 +26,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract sRADAR is ERC20 {
+contract StakedRadar is ERC20 {
     using SafeERC20 for IERC20;
 
     address public owner;
@@ -56,7 +56,7 @@ contract sRADAR is ERC20 {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("sRADAR")),
+                keccak256("sRADAR"),
                 keccak256(bytes(_version)),
                 block.chainid,
                 address(this)
@@ -161,7 +161,8 @@ contract sRADAR is ERC20 {
     // State Getters
 
     function sharePrice() external view returns (uint256) {
-        return (IERC20(RADAR).balanceOf(address(this)) * 10**18) / totalSupply();
+        uint256 _ts = totalSupply();
+        return _ts == 0 ? 1 : (IERC20(RADAR).balanceOf(address(this)) * 10**18) / _ts;
     }
 
     function getRADAR() external view returns (address) {
