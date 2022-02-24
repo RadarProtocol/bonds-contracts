@@ -1,0 +1,50 @@
+version: 2
+
+aliases:
+  - &defaults
+    docker:
+      - image: circleci/node:10
+
+  - &cache_key_node_modules
+    key: v1-node_modules-{{ checksum "yarn.lock" }}
+
+jobs:
+  dependencies:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          <<: *cache_key_node_modules
+      - run:
+          name: Install npm dependencies
+          command: |
+            if [ ! -d node_modules ]; then
+              yarn install --frozen-lockfile
+            fi
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+      - save_cache:
+          paths:
+            - node_modules
+          <<: *cache_key_node_modules
+
+  test:
+    <<: *defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Unit tests
+          command: npm test
+
+workflows:
+  version: 2
+  everything:
+    jobs:
+      - dependencies
+      - test:
+          requires:
+            - dependencies
