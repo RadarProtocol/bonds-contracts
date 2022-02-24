@@ -3,7 +3,7 @@ version: 2
 aliases:
   - &defaults
     docker:
-      - image: circleci/node:10
+      - image: circleci/node:16
 
   - &cache_key_node_modules
     key: v1-node_modules-{{ checksum "yarn.lock" }}
