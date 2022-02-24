@@ -1,47 +1,18 @@
 import { expect } from 'chai';
-import { ethers } from 'ethers';
-import {
-    RadarBondsTreasury__factory,
-    MockToken__factory,
-    RadarBond__factory,
-    RadarStaking__factory,
-    Flasher__factory,
-    RadarSingleAssetBond__factory
-} from "./../typechain";
+import { ethers } from 'hardhat';
 import UniswapV2Pair from "./../utils/UniswapV2Pair.json";
 import UniswapV2Router02 from "./../utils/UniswapV2Router02.json";
 import UniswapV2Factory from "./../utils/UniswapV2Factory.json";
 import IWeth from './../utils/IWeth.json';
 
 const snapshot = async () => {
-    const provider = new ethers.providers.JsonRpcProvider("http://localhost:8545");
-    const deployer = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk",
-        `m/44'/60'/0'/0/0`
-    ).connect(provider);
-    const mockDAO = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk",
-        `m/44'/60'/0'/0/1`
-    ).connect(provider);
-    const otherAddress1 = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk",
-        `m/44'/60'/0'/0/2`
-    ).connect(provider);
-    const investor1 = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk",
-        `m/44'/60'/0'/0/3`
-    ).connect(provider);
-    const investor2 = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk",
-        `m/44'/60'/0'/0/4`
-    ).connect(provider);
+    const [deployer, mockDAO, otherAddress1, investor1, investor2] = await ethers.getSigners();
 
-    // CUSTOM
-    const tokenFactory = new MockToken__factory(deployer);
-    const treasuryFactory = new RadarBondsTreasury__factory(deployer);
-    const bondFactory = new RadarSingleAssetBond__factory(deployer);
-    const stakingFactory = new RadarStaking__factory(deployer);
-    const flasherFactory = new Flasher__factory(deployer);
+    const tokenFactory = await ethers.getContractFactory("MockToken");
+    const treasuryFactory = await ethers.getContractFactory("RadarBondsTreasury");
+    const bondFactory = await ethers.getContractFactory("RadarSingleAssetBond");
+    const stakingFactory = await ethers.getContractFactory("RadarStaking");
+    const flasherFactory = await ethers.getContractFactory("Flasher");
 
     const mockToken = await tokenFactory.deploy();
     const treasury = await treasuryFactory.deploy(mockToken.address, mockDAO.address);
@@ -563,7 +534,7 @@ describe("Radar Single Asset Bond", () => {
         const bondCreatedEventInvestor1 = bond.interface.parseLog(bondReceiptInvestor1.logs[bondReceiptInvestor1.logs.length - 1]);
         const bondCreatedEventInvestor2 = bond.interface.parseLog(bondReceiptInvestor2.logs[bondReceiptInvestor2.logs.length - 1]);
 
-        const lblock = await investor1.provider.getBlock('latest');
+        const lblock = await (investor1.provider as any).getBlock('latest');
         const finishVesting = lblock.timestamp + 432000;
 
         expect(bondCreatedEventInvestor1.args.vestingDate).to.be.closeTo(ethers.BigNumber.from(finishVesting.toString()), 10);
@@ -687,7 +658,7 @@ describe("Radar Single Asset Bond", () => {
 
         const bondCreatedEventInvestor1 = bond.interface.parseLog(bondReceiptInvestor1.logs[bondReceiptInvestor1.logs.length - 1]);
 
-        const lblock = await investor1.provider.getBlock('latest');
+        const lblock = await (investor1.provider as any).getBlock('latest');
         const finishVesting = lblock.timestamp + 432000;
 
         expect(bondCreatedEventInvestor1.args.vestingDate).to.be.closeTo(ethers.BigNumber.from(finishVesting.toString()), 10);
@@ -740,7 +711,7 @@ describe("Radar Single Asset Bond", () => {
 
         const bondCreatedEventInvestor2 = bond.interface.parseLog(bondReceiptInvestor2.logs[bondReceiptInvestor2.logs.length - 1]);
 
-        const lblock2 = await investor1.provider.getBlock('latest');
+        const lblock2 = await (investor1.provider as any).getBlock('latest');
         const finishVesting2 = lblock2.timestamp + 432000;
 
         expect(bondCreatedEventInvestor2.args.vestingDate).to.be.closeTo(ethers.BigNumber.from(finishVesting2.toString()), 10);

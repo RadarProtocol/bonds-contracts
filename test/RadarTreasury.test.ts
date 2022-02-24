@@ -1,30 +1,11 @@
 import { expect } from 'chai';
-import { ethers } from 'ethers';
-import { RadarBondsTreasury__factory, MockToken__factory } from "./../typechain";
+import { ethers } from 'hardhat';
 
 const snapshot = async () => {
-    const provider = new ethers.providers.JsonRpcProvider("http://localhost:8545");
-    const deployer = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk",
-        `m/44'/60'/0'/0/0`
-    ).connect(provider);
-    const mockBond = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk",
-        `m/44'/60'/0'/0/1`
-    ).connect(provider);
-    const mockDAO = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk",
-        `m/44'/60'/0'/0/2`
-    ).connect(provider);
-    const otherAddress1 = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk",
-        `m/44'/60'/0'/0/3`
-    ).connect(provider);
-    
+    const [deployer, mockBond, mockDAO, otherAddress1] = await ethers.getSigners();
 
-    // CUSTOM
-    const tokenFactory = new MockToken__factory(deployer);
-    const treasuryFactory = new RadarBondsTreasury__factory(deployer);
+    const tokenFactory = await ethers.getContractFactory("MockToken");
+    const treasuryFactory = await ethers.getContractFactory("RadarBondsTreasury");
     const mockToken = await tokenFactory.deploy();
     const treasury = await treasuryFactory.deploy(mockToken.address, mockDAO.address);
 
