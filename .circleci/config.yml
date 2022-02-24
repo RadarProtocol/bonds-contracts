@@ -39,6 +39,8 @@ jobs:
       - run:
           name: Unit tests
           command: npm test
+          environment:
+            ETHEREUM_NODE: https://eth-mainnet.alchemyapi.io/v2/BMl6OKMeu0A6ZnM8gj5oBrzdO63r5SXH
 
 workflows:
   version: 2
