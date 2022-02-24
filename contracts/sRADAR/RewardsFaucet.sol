@@ -54,7 +54,7 @@ contract RewardsFaucet {
     }
 
     modifier onlyPokeMe() {
-        require(msg.sender == pokeMe, "Unauthorized");
+        require(msg.sender == pokeMe || msg.sender == owner, "Unauthorized");
         _;
     }
 
