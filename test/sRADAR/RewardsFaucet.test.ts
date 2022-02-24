@@ -32,12 +32,16 @@ describe("RewardsFaucet", () => {
     it("Initial State Getters", async () => {
         const {
             mockToken,
-            rewardsFaucet
+            rewardsFaucet,
+            staking
         } = await snapshot();
 
         // Check RADAR
         const getRadarCall = await rewardsFaucet.RADAR();
         expect(getRadarCall).to.eq(mockToken.address);
+
+        const getStakingCall = await rewardsFaucet.staking();
+        expect(getStakingCall).to.eq(staking.address);
     });
     it.skip("Access Control", async () => {});
 
