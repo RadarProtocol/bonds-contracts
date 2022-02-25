@@ -40,14 +40,14 @@ contract StakedRadar is ERC20 {
     bytes32 immutable public DOMAIN_SEPARATOR;
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
-    mapping(address => uint) public permitNonces;
+    mapping(address => uint) public nonces;
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Unauthorized");
         _;
     }
 
-    constructor(address _radar, uint256 _lockTime, string memory _version) ERC20("Staked Radar", "sRADAR") {
+    constructor(address _radar, uint256 _lockTime) ERC20("Staked Radar", "sRADAR") {
         owner = msg.sender;
         RADAR = _radar;
         lockTime = _lockTime;
@@ -56,8 +56,8 @@ contract StakedRadar is ERC20 {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256("sRADAR"),
-                keccak256(bytes(_version)),
+                keccak256(bytes("Staked Radar")),
+                keccak256(bytes("1")),
                 block.chainid,
                 address(this)
             )
@@ -84,6 +84,11 @@ contract StakedRadar is ERC20 {
 
     function _withdraw(address _user, address _recipient, uint256 _amount) internal {
         require(block.timestamp >= unlockTime[_user], "Tokens Locked");
+        uint256 _userBalance = balanceOf(_user);
+
+        if (_amount > _userBalance) {
+            _amount = _userBalance;
+        }
 
         uint256 _totalShares = totalSupply();
         uint256 _totalTokens = IERC20(RADAR).balanceOf(address(this));
@@ -100,7 +105,7 @@ contract StakedRadar is ERC20 {
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPEHASH, _owner, _spender, _value, permitNonces[_owner]++, _deadline))
+                keccak256(abi.encode(PERMIT_TYPEHASH, _owner, _spender, _value, nonces[_owner]++, _deadline))
             )
         );
         address recoveredAddress = ecrecover(digest, _v, _r, _s);
@@ -162,7 +167,7 @@ contract StakedRadar is ERC20 {
 
     function sharePrice() external view returns (uint256) {
         uint256 _ts = totalSupply();
-        return _ts == 0 ? 1 : (IERC20(RADAR).balanceOf(address(this)) * 10**18) / _ts;
+        return _ts == 0 ? 1e18 : (IERC20(RADAR).balanceOf(address(this)) * 10**18) / _ts;
     }
 
     function getRADAR() external view returns (address) {

@@ -232,7 +232,7 @@ describe("RewardsFaucet", () => {
         await (gelatoNetwork.provider as any).send("evm_increaseTime", [86400 * 10]);
         await rewardsFaucet.connect(gelatoNetwork).drip();
         const sb1 = await mockToken.balanceOf(staking.address);
-        expect(sb1).to.be.closeTo(ethers.utils.parseEther('10'), 10**6);
+        expect(sb1).to.be.closeTo(ethers.utils.parseEther('10'), 10**15);
 
         // We have 18 tokens left for 18 days
         // We add 10 more tokens
