@@ -1,3 +1,6 @@
+[![codecov](https://codecov.io/gh/RadarProtocol/dao-contracts/branch/main/graph/badge.svg?token=WMUH7I4HRZ)](https://codecov.io/gh/RadarProtocol/dao-contracts)
+[![CircleCI](https://circleci.com/gh/RadarProtocol/dao-contracts/tree/main.svg?style=svg)](https://circleci.com/gh/RadarProtocol/dao-contracts/tree/main)
+
 # CONTRACTS
 
 ## BSC
