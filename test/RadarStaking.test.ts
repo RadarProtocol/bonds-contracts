@@ -290,4 +290,127 @@ describe("Radar Staking", () => {
         expect(balStaker).to.be.closeTo(expectedTotalStaker, 10**10);
         expect(balStaker2).to.be.closeTo(expectedTotalStaker2, 10**10);
     });
+    it("Push Reward", async () => {
+        const {
+            deployer,
+            staking,
+            mockToken,
+            staker,
+            staker2
+        } = await snapshot();
+
+        await mockToken.connect(deployer).transfer(staker.address, ethers.utils.parseEther('100'));
+        await mockToken.connect(deployer).transfer(staker2.address, ethers.utils.parseEther('200'));
+
+        await mockToken.connect(staker).approve(staking.address, ethers.utils.parseEther('100'));
+        await mockToken.connect(staker2).approve(staking.address, ethers.utils.parseEther('200'));
+
+        await staking.connect(staker).stake(ethers.utils.parseEther('100'), staker.address);
+
+        const getStakerBalance = await staking.balanceOf(staker.address);
+        expect(getStakerBalance).to.equal(ethers.utils.parseEther('100'));
+
+        const getTotalSupply = await staking.totalSupply();
+        expect(getTotalSupply).to.equal(ethers.utils.parseEther('100'));
+
+        // Add rewards
+        await mockToken.connect(deployer).transfer(staking.address, ethers.utils.parseEther('1000'));
+        await staking.connect(deployer).addedReward(ethers.utils.parseEther('1000'));
+
+        // Pass half a month
+        await (deployer.provider as any).send("evm_increaseTime", [60*60*24*14]);
+
+        // Stake staker2
+        await staking.connect(staker2).stake(ethers.utils.parseEther('200'), staker2.address);
+        const rewardsUntil = await staking.earned(staker.address);
+
+        // Pass another half a month
+        await (deployer.provider as any).send("evm_increaseTime", [60*60*24*14]);
+        await mockToken.connect(deployer).approve(staking.address, 1);
+        await staking.connect(deployer).stake(1, deployer.address)
+
+        // Get rewards
+        const expectedRewardStaker = ethers.utils.parseEther('1000').mul(ethers.BigNumber.from(((0.5 + (1/3)*0.5) * 10**18).toString())).div((10**18).toString());
+        const expectedRewardStaker2 = ethers.utils.parseEther('1000').mul(ethers.BigNumber.from((((2/3)*0.5) * 10**18).toString())).div((10**18).toString());
+        const expectedTotalStaker = ethers.BigNumber.from(expectedRewardStaker).add(ethers.utils.parseEther('100'));
+        const expectedTotalStaker2 = ethers.BigNumber.from(expectedRewardStaker2).add(ethers.utils.parseEther('200'));
+        const earnedStaker = await staking.earned(staker.address);
+        const earnedStaker2 = await staking.earned(staker2.address);
+        console.log(`Expected reward for 1: ${expectedRewardStaker} and for 2: ${expectedRewardStaker2}`);
+        console.log(`Earned staker 1: ${earnedStaker} and 2: ${earnedStaker2}`)
+        expect(earnedStaker.div(ethers.BigNumber.from((10**18).toString()))).to.equal(ethers.BigNumber.from(expectedRewardStaker).div(ethers.BigNumber.from((10**18).toString())));
+        expect(earnedStaker2.div(ethers.BigNumber.from((10**18).toString()))).to.equal(expectedRewardStaker2.div(ethers.BigNumber.from((10**18).toString())));
+
+        await staking.pushReward(staker.address);
+        await staking.pushReward(staker2.address);
+
+        const s1bal = await mockToken.balanceOf(staker.address);
+        const s2bal = await mockToken.balanceOf(staker2.address);
+        expect(s1bal).to.eq(earnedStaker);
+        expect(s2bal).to.eq(earnedStaker2);
+
+        await staking.connect(staker).exit();
+        await staking.connect(staker2).exit();
+
+        const stakingTokenBalance = await mockToken.balanceOf(staking.address);
+        expect(stakingTokenBalance.div(ethers.BigNumber.from((10**18).toString()))).to.equal(0);
+
+        const balStaker = await mockToken.balanceOf(staker.address);
+        const balStaker2 = await mockToken.balanceOf(staker2.address);
+        expect(balStaker).to.be.closeTo(expectedTotalStaker, 10**15);
+        expect(balStaker2).to.be.closeTo(expectedTotalStaker2, 10**15);
+    });
+    it("Override Duration", async () => {
+        const {
+            deployer,
+            staking,
+            mockToken,
+            staker,
+            staker2
+        } = await snapshot();
+
+        await mockToken.connect(deployer).transfer(staker.address, ethers.utils.parseEther('100'));
+        await mockToken.connect(deployer).transfer(staker2.address, ethers.utils.parseEther('200'));
+
+        await mockToken.connect(staker).approve(staking.address, ethers.utils.parseEther('100'));
+        await mockToken.connect(staker2).approve(staking.address, ethers.utils.parseEther('200'));
+
+        await staking.connect(staker).stake(ethers.utils.parseEther('100'), staker.address);
+
+        const getStakerBalance = await staking.balanceOf(staker.address);
+        expect(getStakerBalance).to.equal(ethers.utils.parseEther('100'));
+
+        const getTotalSupply = await staking.totalSupply();
+        expect(getTotalSupply).to.equal(ethers.utils.parseEther('100'));
+
+        // Add rewards
+        await mockToken.connect(deployer).transfer(staking.address, ethers.utils.parseEther('1000'));
+        await staking.connect(deployer).addedReward(ethers.utils.parseEther('1000'));
+
+        // Pass half a month
+        await (deployer.provider as any).send("evm_increaseTime", [60*60*24*14]);
+        await mockToken.connect(deployer).transfer(staking.address, ethers.utils.parseEther('1000'));
+        await staking.connect(deployer).addedReward(ethers.utils.parseEther('1000'));
+
+        // Stake staker2
+        await staking.connect(staker2).stake(ethers.utils.parseEther('200'), staker2.address);
+        const rewardsUntil = await staking.earned(staker.address);
+
+        // Pass another half a month
+        await (deployer.provider as any).send("evm_increaseTime", [60*60*24*14]);
+        await mockToken.connect(deployer).approve(staking.address, 1);
+        await staking.connect(deployer).stake(1, deployer.address)
+
+        // Get rewards
+        const expectedRewardStaker = ethers.utils.parseEther('1000').mul(ethers.BigNumber.from(((0.5 + (1/3)*0.75) * 10**18).toString())).div((10**18).toString());
+        const expectedRewardStaker2 = ethers.utils.parseEther('1000').mul(ethers.BigNumber.from((((2/3)*0.75) * 10**18).toString())).div((10**18).toString());
+        const expectedTotalStaker = ethers.BigNumber.from(expectedRewardStaker).add(ethers.utils.parseEther('100'));
+        const expectedTotalStaker2 = ethers.BigNumber.from(expectedRewardStaker2).add(ethers.utils.parseEther('200'));
+        const earnedStaker = await staking.earned(staker.address);
+        const earnedStaker2 = await staking.earned(staker2.address);
+        console.log(`Expected reward for 1: ${expectedRewardStaker} and for 2: ${expectedRewardStaker2}`);
+        console.log(`Earned staker 1: ${earnedStaker} and 2: ${earnedStaker2}`)
+        expect(earnedStaker.div(ethers.BigNumber.from((10**18).toString()))).to.equal(ethers.BigNumber.from(expectedRewardStaker).div(ethers.BigNumber.from((10**18).toString())));
+        expect(earnedStaker2.div(ethers.BigNumber.from((10**18).toString()))).to.equal(expectedRewardStaker2.div(ethers.BigNumber.from((10**18).toString())));
+    });
 });
